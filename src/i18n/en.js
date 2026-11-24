@@ -924,6 +924,8 @@ export const en = {
     defaultName: "Rookie",
     previewMeta: "{talent} · Age 16 · Year 1",
     startBtn: "Start Game",
+    quickStartBtn: "▶ Play Now (Quick Start)",
+    customCreateBtn: "Custom Player",
   },
 
   weekly: {

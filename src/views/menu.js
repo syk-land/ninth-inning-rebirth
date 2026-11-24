@@ -65,26 +65,20 @@ function relativeTime(ts) {
   return t("menu.dayAgo", { n: day });
 }
 
-// 시작(타이틀/로딩) 화면 — 앱 진입 첫 화면.
-//   1) 최초 1회 짧은 로딩 연출 → 2) 타이틀 메뉴 (이어하기/새 게임 + 로그인/클라우드/상점/데이터초기화)
-//   캐릭터 생성 화면(renderMenu)은 깔끔하게 생성만 담당하도록 분리.
-let startLoadingDone = false;
+function isPortalEmbed() {
+  try {
+    if (window.self !== window.top) return true;
+  } catch (_) {
+    return true;
+  }
+  const host = (window.location && window.location.hostname) || "";
+  return /gamemonetize|yandex|crazygames|poki/i.test(host);
+}
+
+// 시작(타이틀) 화면 — 인위적 로딩 지연 없이 즉시 타이틀 메뉴 노출 (H5 5초 훅 최적화).
 export function renderStart(root, route) {
   root.innerHTML = "";
-
-  if (startLoadingDone) {
-    buildStartMenu(root, route);
-    return;
-  }
-  // 로딩 연출 (1회) — 로고 + 스피너, 잠시 후 타이틀 메뉴로 전환.
-  const wrap = document.createElement("div");
-  wrap.className = "stack";
-  root.appendChild(wrap);
-  buildLoadingPhase(wrap);
-  setTimeout(() => {
-    startLoadingDone = true;
-    if (state.view === "start") { root.innerHTML = ""; buildStartMenu(root, route); }
-  }, 900);
+  buildStartMenu(root, route);
 }
 
 function ensureSpinnerStyle() {
@@ -164,14 +158,16 @@ function buildStartMenu(root, route) {
   const actions = document.createElement("div");
   actions.className = "start-actions";
 
-  // 로그인 상태 (로그인 시)
-  if (isSignedIn()) actions.appendChild(renderAuthPanel(route));
+  const portal = isPortalEmbed();
 
-  // 이어하기 + 새 게임 (없으면 게임 시작)
+  // 로그인 상태 (포털 iframe 임베드 환경에서는 팝업 차단/검수 준수를 위해 숨김)
+  if (!portal && isSignedIn()) actions.appendChild(renderAuthPanel(route));
+
+  // 이어하기 + 새 게임 (없으면 1클릭 즉시 플레이 + 커스텀 생성)
   actions.appendChild(renderStartButtons(route));
 
-  // 클라우드 저장 + 불러오기 (로그인 시)
-  if (isSignedIn()) actions.appendChild(renderCloudPanel(route));
+  // 클라우드 저장 + 불러오기 (포털 iframe 임베드 환경에서는 숨김)
+  if (!portal && isSignedIn()) actions.appendChild(renderCloudPanel(route));
 
   // 회귀 상점 진입 (적립 있을 때)
   const m = state.regression;
@@ -210,9 +206,37 @@ function renderStartButtons(route) {
     fresh.style.cssText = "width:100%; padding:10px; font-size:13px;";
     startPanel.appendChild(fresh);
   } else {
-    const startBtn = button(t("menu.startBtn"), "primary", () => { sfx("click"); route("menu"); });
-    startBtn.style.cssText = "width:100%; padding:13px; font-size:16px; font-weight:700;";
-    startPanel.appendChild(startBtn);
+    const quickBtn = button(t("menu.quickStartBtn"), "primary", () => {
+      sfx("good");
+      const name = randomName(getLocale()) || t("menu.defaultName");
+      const loadout = consumeLoadoutForCharacter();
+      syncDraftTalents();
+      resetState();
+      state.player = createPlayer({
+        name,
+        talent: "all_round",
+        talents: draft.talents,
+        hand: "right",
+        faceId: "f1",
+        startingStat: loadout.startingStat,
+        traits: loadout.traits,
+        relics: loadout.relics,
+        relicLevels: loadout.relicLevels,
+      });
+      startHighSchoolCareer(name, "all_round", null);
+      state.gameDate = createGameDate();
+      state.autoMode = "two_way";
+      state.paused = false;
+      resetWeeklyCarousel();
+      saveGame();
+      route("weekly");
+    });
+    quickBtn.style.cssText = "width:100%; padding:13px; font-size:16px; font-weight:700; margin-bottom:8px;";
+    startPanel.appendChild(quickBtn);
+
+    const customBtn = button(t("menu.customCreateBtn"), "", () => { sfx("click"); route("menu"); });
+    customBtn.style.cssText = "width:100%; padding:10px; font-size:13px;";
+    startPanel.appendChild(customBtn);
   }
 
   // 홈런 더비 실시간 타이밍 미니게임 바로가기

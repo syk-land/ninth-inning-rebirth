@@ -928,6 +928,8 @@ export const ko = {
     defaultName: "주인공",
     previewMeta: "{talent} · 16세 · 고교 1학년",
     startBtn: "게임 시작",
+    quickStartBtn: "▶ 바로 시작 (1클릭)",
+    customCreateBtn: "선수 커스텀 생성",
   },
 
   weekly: {

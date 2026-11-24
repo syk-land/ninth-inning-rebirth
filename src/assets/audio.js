@@ -16,6 +16,7 @@ let unlocked = false;
 let currentBgm = null;        // { key, el } — el 은 실제 재생 준비 시 생성
 const bgmCache = {};          // key -> HTMLAudioElement
 let unlockWired = false;
+let adPaused = false;
 
 function audioCtx() {
   if (!ctx) {
@@ -46,7 +47,7 @@ function ensureBgmElement(key) {
 }
 
 function startPendingBgmIfReady() {
-  if (!currentBgm || !unlocked || isMuted() || document.hidden) return;
+  if (!currentBgm || !unlocked || isMuted() || document.hidden || adPaused) return;
   if (!currentBgm.el) {
     currentBgm.el = ensureBgmElement(currentBgm.key);
   }
@@ -88,6 +89,16 @@ export function initAudioUnlock() {
   });
   window.addEventListener("pagehide", onHidden);
   window.addEventListener("pageshow", onVisible);
+  window.addEventListener("gm-sdk-event", (e) => {
+    const name = e?.detail?.name;
+    if (name === "SDK_GAME_PAUSE") {
+      adPaused = true;
+      onHidden();
+    } else if (name === "SDK_GAME_START") {
+      adPaused = false;
+      onVisible();
+    }
+  });
 }
 
 // ── 효과음 (Web Audio 16-bit 합성) ────────────────────────────────
@@ -102,7 +113,7 @@ function whiteNoise(c, dur) {
 }
 
 export function sfx(name) {
-  if (isMuted() || document.hidden) return;
+  if (isMuted() || document.hidden || adPaused) return;
   const vol = sfxVol();
   if (vol <= 0.001) return;
   const c = audioCtx();

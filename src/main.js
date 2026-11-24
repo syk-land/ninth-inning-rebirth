@@ -152,9 +152,20 @@ export function route(name, opts = {}) {
   }
 }
 
-// 실시간 진행 루프 (visibilitychange 시 자동 일시 중단하여 백그라운드 점프/CPU 낭비 방지)
+// 실시간 진행 루프 (visibilitychange 및 광고 재생 시 자동 일시 중단하여 백그라운드 점프/CPU 낭비 방지)
 let tickTimer = null;
 let saveCounter = 0;
+let adPaused = false;
+
+function isPortalEmbed() {
+  try {
+    if (window.self !== window.top) return true;
+  } catch (_) {
+    return true;
+  }
+  const host = (window.location && window.location.hostname) || "";
+  return /gamemonetize|yandex|crazygames|poki/i.test(host);
+}
 
 function stopTickTimer() {
   if (tickTimer) {
@@ -165,13 +176,13 @@ function stopTickTimer() {
 
 function scheduleTick() {
   stopTickTimer();
-  if (document.hidden) return;
+  if (document.hidden || adPaused) return;
   tickTimer = setTimeout(runTick, state.tickSpeed ?? 500);
 }
 
 function runTick() {
   tickTimer = null;
-  if (document.hidden) return;
+  if (document.hidden || adPaused) return;
   // 게임 진행 가능 조건
   if (state.view !== "weekly" || !state.player || !state.season) {
     scheduleTick();
@@ -380,8 +391,8 @@ function init() {
   loadLocaleFromStorage();
   loadSettings();
   loadRegressionMeta();
-  // Firebase Auth/Firestore 부팅 — firebaseConfig 비어있으면 silently 스킵.
-  if (initFirebase()) {
+  // Firebase Auth/Firestore 부팅 — 포털 iframe 임베드 환경에서는 팝업 차단/검수 준수를 위해 스킵.
+  if (!isPortalEmbed() && initFirebase()) {
     // 인증 상태가 늦게 도착하면(첫 익명 로그인 등) 시작화면을 다시 그려 로그인 카드를 노출.
     initAuth(() => { if (state.view === "start") route("start"); });
   }
@@ -411,9 +422,24 @@ function init() {
     }
     pdInModal = false;
   }, true);
-  // 광고(GameMonetize) 동안 BGM 일시정지/복귀 — index.html SDK onEvent 가 호출.
-  window.__adPause = () => { try { stopBgm(); } catch (_) {} };
-  window.__adResume = () => { try { if (VIEW_BGM[state.view]) playBgm(VIEW_BGM[state.view]); } catch (_) {} };
+  // 광고(GameMonetize/Yandex) 동안 BGM + 틱 루프 일시정지/복귀.
+  const pauseForAd = () => {
+    adPaused = true;
+    stopTickTimer();
+    try { stopBgm(); } catch (_) {}
+  };
+  const resumeAfterAd = () => {
+    adPaused = false;
+    try { if (VIEW_BGM[state.view]) playBgm(VIEW_BGM[state.view]); } catch (_) {}
+    if (!document.hidden) scheduleTick();
+  };
+  window.__adPause = pauseForAd;
+  window.__adResume = resumeAfterAd;
+  window.addEventListener("gm-sdk-event", (e) => {
+    const name = e?.detail?.name;
+    if (name === "SDK_GAME_PAUSE") pauseForAd();
+    else if (name === "SDK_GAME_START") resumeAfterAd();
+  });
   route("start");
   scheduleTick();
   // 프리롤 광고는 브라우저 자동재생 차단을 피하기 위해 첫 사용자 클릭 시(index.html) 1회 실행.
