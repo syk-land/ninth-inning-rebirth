@@ -32,6 +32,7 @@ export const en = {
     retiredLabel: "Retired",
     teamPlaceholder: "-",
     localeToggle: "KO",
+    speedAria: "Simulation speed",
   },
 
   dateFormat: "{monthAbbr} {dayOfMonth} ({weekday})",

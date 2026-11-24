@@ -159,7 +159,9 @@ export function loadGame() {
   try {
     const raw = localStorage.getItem(SAVE_KEY);
     if (!raw) return false;
-    const data = migrateSave(JSON.parse(raw));
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object") return false;
+    const data = migrateSave(parsed);
     Object.assign(state, data);
     // 이어하기/새로고침으로 들어올 때는 항상 일시정지 — 사용자가 ▶ 누를 때까지 대기
     state.paused = true;
@@ -171,7 +173,11 @@ export function loadGame() {
 }
 
 export function hasSave() {
-  return !!localStorage.getItem(SAVE_KEY);
+  try {
+    return !!localStorage.getItem(SAVE_KEY);
+  } catch (_) {
+    return false;
+  }
 }
 
 // 로컬 세이브의 lastSaved 만 빠르게 조회 (전체 파싱 회피).
@@ -181,14 +187,16 @@ export function getLocalSavedAt() {
     const raw = localStorage.getItem(SAVE_KEY);
     if (!raw) return null;
     const data = JSON.parse(raw);
-    return typeof data.lastSaved === "number" ? data.lastSaved : null;
+    return typeof data?.lastSaved === "number" ? data.lastSaved : null;
   } catch (_) {
     return null;
   }
 }
 
 export function deleteSave() {
-  localStorage.removeItem(SAVE_KEY);
+  try {
+    localStorage.removeItem(SAVE_KEY);
+  } catch (_) {}
 }
 
 export function resetState() {
@@ -216,14 +224,16 @@ export function resetState() {
 // 클라우드(Firestore) 문서 삭제는 별도(cloudSave.deleteFromCloud) — 호출 측에서 처리.
 const LOCALE_KEY = "ninthinning.locale.v1";
 export function resetAllData({ keepLocale = true } = {}) {
-  const toRemove = [];
-  for (let i = 0; i < localStorage.length; i++) {
-    const k = localStorage.key(i);
-    if (!k || !k.startsWith("ninthinning.")) continue;
-    if (keepLocale && k === LOCALE_KEY) continue;
-    toRemove.push(k);
-  }
-  for (const k of toRemove) localStorage.removeItem(k);
+  try {
+    const toRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (!k || !k.startsWith("ninthinning.")) continue;
+      if (keepLocale && k === LOCALE_KEY) continue;
+      toRemove.push(k);
+    }
+    for (const k of toRemove) localStorage.removeItem(k);
+  } catch (_) {}
   resetState();
   // 별도 키로 영속화되는 메타도 메모리에서 비워 다음 로드가 기본값을 다시 만들게 함.
   state.regression = null;

@@ -8,7 +8,9 @@
 // 생성된 에셋을 아래 경로/파일명에 맞춰 넣으면 즉시 반영된다.
 
 export const IMAGES = {
-  titleHero:     { src: "assets/img/title-hero.webp",    preload: true },  // 타이틀 — 석양 타자
+  titleHero:     { src: "assets/img/title-hero.webp",     preload: true },  // 타이틀 — 석양 타자
+  fieldStadium:  { src: "assets/img/field-stadium.webp",  preload: true },  // 라이브 픽셀 야구장
+  fieldPractice: { src: "assets/img/field-practice.webp", preload: true },  // 라이브 픽셀 연습장
   eventChampion: { src: "assets/img/event-champion.webp" },               // 우승 트로피 세리머니
   eventHof:      { src: "assets/img/event-hof.webp" },                    // 명예의 전당 헌액
   eventDraft:    { src: "assets/img/event-draft.webp" },                  // 드래프트 입단

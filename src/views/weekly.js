@@ -867,10 +867,15 @@ function animateBallTrajectory(svg, type) {
   ball.setAttribute("cy", P0[1]);
 
   const duration = 700;
-  const t0 = performance.now();
+  let elapsed = 0;
+  let lastNow = performance.now();
 
   function frame(now) {
-    const t = Math.min(1, (now - t0) / duration);
+    if (!svg.isConnected) return;
+    const dt = document.hidden ? 0 : Math.min(Math.max(now - lastNow, 0), 50);
+    lastNow = now;
+    elapsed += dt;
+    const t = Math.min(1, elapsed / duration);
     const u = 1 - t;
     const x = u*u*u * P0[0] + 3*u*u*t * P1[0] + 3*u*t*t * P2[0] + t*t*t * P3[0];
     const y = u*u*u * P0[1] + 3*u*u*t * P1[1] + 3*u*t*t * P2[1] + t*t*t * P3[1];
@@ -1845,28 +1850,31 @@ function renderAutoPanel(route) {
 // 토스트 — kind = "good" (긍정) | "bad" (부정) | "info" (중립)
 function showToast(msg, kind = "good") {
   const colors = {
-    good: { bg: "#3fb950", shadow: "rgba(63,185,80,0.4)" },
-    bad:  { bg: "#f85149", shadow: "rgba(248,81,73,0.4)" },
-    info: { bg: "#4ea4ff", shadow: "rgba(78,164,255,0.4)" },
+    good: { bg: "#ffe259", fg: "#3b2412", border: "#4a3321", shadow: "rgba(74,51,33,0.45)" },
+    bad:  { bg: "#ffe5e5", fg: "#991b1b", border: "#991b1b", shadow: "rgba(153,27,27,0.35)" },
+    info: { bg: "#fff9ea", fg: "#1d522b", border: "#4a3321", shadow: "rgba(74,51,33,0.35)" },
   };
   const c = colors[kind] ?? colors.good;
+  if (kind === "good") sfx("milestone");
   const el = document.createElement("div");
+  el.className = `kairo-toast kairo-toast-${kind}`;
   el.textContent = msg;
   Object.assign(el.style, {
     position: "fixed",
-    top: "20px",
+    top: "calc(16px + env(safe-area-inset-top, 0px))",
     left: "50%",
     transform: "translateX(-50%)",
     background: c.bg,
-    color: "#08111c",
-    padding: "12px 20px",
+    color: c.fg,
+    border: `2px solid ${c.border}`,
+    padding: "10px 18px",
     borderRadius: "8px",
-    fontWeight: "700",
-    fontSize: "14px",
+    fontWeight: "800",
+    fontSize: "13px",
     maxWidth: "92vw",
-    boxShadow: `0 6px 20px ${c.shadow}, 0 0 30px ${c.shadow}`,
+    boxShadow: `0 3px 0 ${c.border}, 0 8px 18px ${c.shadow}`,
     zIndex: "1000",
-    transition: "opacity 400ms, transform 400ms",
+    transition: "opacity 320ms, transform 320ms",
     pointerEvents: "none",
   });
   document.body.appendChild(el);
@@ -1876,7 +1884,7 @@ function showToast(msg, kind = "good") {
   setTimeout(() => {
     el.style.opacity = "0";
     el.style.transform = "translateX(-50%) translateY(-10px)";
-  }, 1800);
+  }, 1900);
   setTimeout(() => el.remove(), 2300);
 }
 

@@ -32,6 +32,7 @@ export const ko = {
     retiredLabel: "은퇴",
     teamPlaceholder: "-",
     localeToggle: "EN",   // 현재 KO일 때 토글 버튼은 다른 언어 라벨 노출
+    speedAria: "진행 배속",
   },
 
   dateFormat: "{month}월 {dayOfMonth}일 ({weekday})",

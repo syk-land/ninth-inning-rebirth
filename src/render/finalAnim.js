@@ -353,15 +353,18 @@ function playPitchSequenceManual({ svg, fxHost, ball, labelHost, swingRef, event
       showLabel(labelHost, t("homerunDerby.swingBtn") || "SWING!", "var(--accent)");
 
       sfx("pitch");
-      const pitchStartTime = Date.now();
+      const pitchStartTime = performance.now();
       let swingTriggered = false;
-      let clickTime = 0;
+      let elapsedMs = 0;
+      let lastFrameTs = pitchStartTime;
 
-      // 타격 애니메이션 루프 (수동 구동)
-      const activeFrame = () => {
-        if (!isInteractiveActive || swingTriggered) return;
-        const elapsed = Date.now() - pitchStartTime;
-        const p = Math.min(1.0, elapsed / duration);
+      // 타격 애니메이션 루프 (수동 구동, dt 클램프 + 숨김 시 정지)
+      const activeFrame = (now) => {
+        if (!isInteractiveActive || swingTriggered || !svg.isConnected) return;
+        const dt = document.hidden ? 0 : Math.min(Math.max(now - lastFrameTs, 0), 50);
+        lastFrameTs = now;
+        elapsedMs += dt;
+        const p = Math.min(1.0, elapsedMs / duration);
         const cy = start.y + (195 - start.y) * p;
         const r = start.r + (15 - start.r) * p;
         ball.setAttribute("cy", cy.toFixed(1));
@@ -376,11 +379,9 @@ function playPitchSequenceManual({ svg, fxHost, ball, labelHost, swingRef, event
         const onSwing = (e) => {
           if (swingTriggered) return;
           swingTriggered = true;
-          clickTime = Date.now();
           container.removeEventListener("click", onSwing);
 
-          const elapsed = clickTime - pitchStartTime;
-          const p = elapsed / duration;
+          const p = elapsedMs / duration;
 
           // 능력치 반영 타이밍 윈도우 계산
           const contactStat = state.player?.contact ?? 50;
@@ -478,15 +479,18 @@ function playPitchSequenceManual({ svg, fxHost, ball, labelHost, swingRef, event
       
       showLabel(labelHost, "RELEASE!", "var(--accent)");
 
-      const pitchStartTime = Date.now();
+      const pitchStartTime = performance.now();
       let releaseTriggered = false;
-      let clickTime = 0;
+      let elapsedMs = 0;
+      let lastFrameTs = pitchStartTime;
 
-      // 링 크기 축소 애니메이션 프레임
-      const ringFrame = () => {
-        if (!isInteractiveActive || releaseTriggered) return;
-        const elapsed = Date.now() - pitchStartTime;
-        const p = Math.min(1.0, elapsed / duration);
+      // 링 크기 축소 애니메이션 프레임 (dt 클램프 + 숨김 시 정지)
+      const ringFrame = (now) => {
+        if (!isInteractiveActive || releaseTriggered || !svg.isConnected) return;
+        const dt = document.hidden ? 0 : Math.min(Math.max(now - lastFrameTs, 0), 50);
+        lastFrameTs = now;
+        elapsedMs += dt;
+        const p = Math.min(1.0, elapsedMs / duration);
         const r = 60 - (60 - 15) * p;
         ring.setAttribute("r", r.toFixed(1));
         if (p < 1.0) {
@@ -499,12 +503,10 @@ function playPitchSequenceManual({ svg, fxHost, ball, labelHost, swingRef, event
         const onRelease = () => {
           if (releaseTriggered) return;
           releaseTriggered = true;
-          clickTime = Date.now();
           container.removeEventListener("click", onRelease);
           ring.remove();
 
-          const elapsed = clickTime - pitchStartTime;
-          const p = elapsed / duration;
+          const p = elapsedMs / duration;
 
           const controlStat = state.player?.control ?? 50;
           const perfectWin = 0.05 + (controlStat - 50) * 0.0003;
@@ -649,10 +651,15 @@ function spawnFireworks(svg) {
     particles.push({ el: flash, flash: true, t: 0 });
   }
 
-  const t0 = performance.now();
+  let elapsedSec = 0;
+  let lastNow = performance.now();
   function frame(now) {
+    if (!layer.isConnected) return;
+    const dtMs = document.hidden ? 0 : Math.min(Math.max(now - lastNow, 0), 50);
+    lastNow = now;
     // t 자체에 speedMult 역수를 곱해 폭죽 전체 진행을 가속 (위치+불투명도 동기)
-    const t = ((now - t0) / 1000) / speedMult();
+    elapsedSec += (dtMs / 1000) / speedMult();
+    const t = elapsedSec;
     const p = Math.min(1, t / 0.9);
     for (const pt of particles) {
       if (pt.flash) {
@@ -676,15 +683,20 @@ function spawnFireworks(svg) {
 }
 
 function animateBall(ball, from, to, duration) {
-  const dur = duration * speedMult();
+  const dur = Math.max(16, duration * speedMult());
   return new Promise(resolve => {
-    const t0 = performance.now();
+    let elapsed = 0;
+    let lastNow = performance.now();
     const fromR = from.r ?? +ball.getAttribute("r");
     const toR = to.r ?? fromR;
     const fromOp = +ball.style.opacity || 1;
     const toOp = to.opacity ?? 1;
     function frame(now) {
-      const p = Math.min(1, (now - t0) / dur);
+      if (!ball.isConnected) { resolve(); return; }
+      const dt = document.hidden ? 0 : Math.min(Math.max(now - lastNow, 0), 50);
+      lastNow = now;
+      elapsed += dt;
+      const p = Math.min(1, elapsed / dur);
       const x = from.x + (to.x - from.x) * p;
       const y = from.y + (to.y - from.y) * p;
       const r = fromR + (toR - fromR) * p;
@@ -802,10 +814,14 @@ export function pulseDiamondHome(diamondSvg) {
     stroke: "var(--accent-2)", "stroke-width": 2, opacity: "0.9",
   });
   diamondSvg.appendChild(ring);
-  const t0 = performance.now();
+  let elapsed = 0;
+  let lastNow = performance.now();
   function frame(now) {
-    const t = now - t0;
-    const p = Math.min(1, t / 700);
+    if (!ring.isConnected) return;
+    const dt = document.hidden ? 0 : Math.min(Math.max(now - lastNow, 0), 50);
+    lastNow = now;
+    elapsed += dt;
+    const p = Math.min(1, elapsed / 700);
     ring.setAttribute("r", (5 + p * 22).toFixed(1));
     ring.setAttribute("opacity", (0.9 * (1 - p)).toFixed(2));
     if (p < 1) requestAnimationFrame(frame);

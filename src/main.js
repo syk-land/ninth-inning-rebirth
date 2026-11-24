@@ -36,6 +36,19 @@ function getRoot() {
   return document.getElementById("view-root");
 }
 
+const SPEED_PRESETS = [
+  { label: "0.5x", ms: 1000 },
+  { label: "1x",   ms: 500 },
+  { label: "2x",   ms: 250 },
+  { label: "4x",   ms: 125 },
+];
+
+function currentSpeedLabel() {
+  const cur = state.tickSpeed ?? 500;
+  const hit = SPEED_PRESETS.find(s => s.ms === cur);
+  return hit ? hit.label : "1x";
+}
+
 // 정적 chrome (topbar 로고, 토글 버튼 라벨, footer 버전, document.title) 동기화
 function updateChrome() {
   // 게임명은 푸터 오른쪽에 표시(헤더 로고 제거, 버전 문자열 미표시).
@@ -46,9 +59,16 @@ function updateChrome() {
     toggle.textContent = "⚙";
     toggle.setAttribute("aria-label", t("settingsModal.title"));
   }
+  const gameActive = state.view === "weekly" && !!state.season && !!state.player;
+  const speedToggle = document.getElementById("speed-toggle");
+  if (speedToggle) {
+    speedToggle.hidden = !gameActive;
+    speedToggle.disabled = !gameActive;
+    speedToggle.textContent = currentSpeedLabel();
+    speedToggle.setAttribute("aria-label", `${t("nav.speedAria")}: ${currentSpeedLabel()}`);
+  }
   const pauseToggle = document.getElementById("pause-toggle");
   if (pauseToggle) {
-    const gameActive = state.view === "weekly" && !!state.season && !!state.player;
     pauseToggle.disabled = !gameActive;
     pauseToggle.style.opacity = gameActive ? "1" : "0.4";
     pauseToggle.textContent = state.paused ? "▶" : "⏸";
@@ -132,16 +152,26 @@ export function route(name, opts = {}) {
   }
 }
 
-// 실시간 진행 루프
+// 실시간 진행 루프 (visibilitychange 시 자동 일시 중단하여 백그라운드 점프/CPU 낭비 방지)
 let tickTimer = null;
 let saveCounter = 0;
 
+function stopTickTimer() {
+  if (tickTimer) {
+    clearTimeout(tickTimer);
+    tickTimer = null;
+  }
+}
+
 function scheduleTick() {
-  if (tickTimer) clearTimeout(tickTimer);
+  stopTickTimer();
+  if (document.hidden) return;
   tickTimer = setTimeout(runTick, state.tickSpeed ?? 500);
 }
 
 function runTick() {
+  tickTimer = null;
+  if (document.hidden) return;
   // 게임 진행 가능 조건
   if (state.view !== "weekly" || !state.player || !state.season) {
     scheduleTick();
@@ -178,6 +208,25 @@ function wireSettingsButton() {
   btn.addEventListener("click", () => openSettingsModal(route));
 }
 
+function setSimulationSpeed(ms) {
+  state.tickSpeed = ms;
+  saveGame();
+  updateChrome();
+  if (!document.hidden) scheduleTick();
+}
+
+function wireSpeedButton() {
+  const btn = document.getElementById("speed-toggle");
+  if (!btn) return;
+  btn.addEventListener("click", () => {
+    if (btn.disabled) return;
+    const idx = SPEED_PRESETS.findIndex(s => s.ms === (state.tickSpeed ?? 500));
+    const next = SPEED_PRESETS[(idx + 1) % SPEED_PRESETS.length];
+    sfx("speed");
+    setSimulationSpeed(next.ms);
+  });
+}
+
 function wirePauseButton() {
   const btn = document.getElementById("pause-toggle");
   if (!btn) return;
@@ -185,6 +234,52 @@ function wirePauseButton() {
     if (btn.disabled) return;
     state.paused = !state.paused;
     updateChrome();
+  });
+}
+
+function wireKeyboardShortcuts() {
+  document.addEventListener("keydown", (e) => {
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    const tag = e.target?.tagName;
+    if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || e.target?.isContentEditable) return;
+
+    const modals = document.querySelectorAll("body > .modal-backdrop");
+    if (e.key === "Escape" && modals.length > 0) {
+      const top = modals[modals.length - 1];
+      if (top.dataset.noDismiss == null) {
+        e.preventDefault();
+        top.remove();
+      }
+      return;
+    }
+    if (modals.length > 0) return;
+
+    const gameActive = state.view === "weekly" && !!state.season && !!state.player && !state.season.finished;
+    if (!gameActive) return;
+
+    if (e.code === "Space") {
+      e.preventDefault();
+      state.paused = !state.paused;
+      sfx("click");
+      updateChrome();
+    } else if (e.key === "1" || e.key === "2" || e.key === "3" || e.key === "4") {
+      const preset = SPEED_PRESETS[Number(e.key) - 1];
+      if (preset) {
+        e.preventDefault();
+        sfx("speed");
+        setSimulationSpeed(preset.ms);
+      }
+    }
+  });
+}
+
+function wireVisibilityPause() {
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) {
+      stopTickTimer();
+    } else {
+      scheduleTick();
+    }
   });
 }
 
@@ -292,7 +387,10 @@ function init() {
   }
   updateChrome();
   wireSettingsButton();
+  wireSpeedButton();
   wirePauseButton();
+  wireKeyboardShortcuts();
+  wireVisibilityPause();
   setupScrollTopButton();
   setupModalManager();  // 뒤로가기로 모달 닫기 + 닫기(×) 버튼 자동 주입
   initAudioUnlock();   // 첫 사용자 제스처에 오디오 unlock

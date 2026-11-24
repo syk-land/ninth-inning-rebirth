@@ -63,7 +63,11 @@ export function renderHomerunDerby(root, route) {
   root.innerHTML = "";
   
   // 상태 초기화
-  highScore = parseInt(localStorage.getItem("homerunderby_highscore") || "0", 10);
+  try {
+    highScore = parseInt(localStorage.getItem("homerunderby_highscore") || "0", 10) || 0;
+  } catch (_) {
+    highScore = 0;
+  }
   gameActive = false;
   reviveUsed = false;
   clearTimeoutsAndFrames();
@@ -481,7 +485,9 @@ function endGame() {
   const isNewRecord = gameScore > highScore;
   if (isNewRecord) {
     highScore = gameScore;
-    localStorage.setItem("homerunderby_highscore", highScore.toString());
+    try {
+      localStorage.setItem("homerunderby_highscore", highScore.toString());
+    } catch (_) {}
   }
 
   viewContainer.innerHTML = "";

@@ -71,6 +71,8 @@ export function openSettingsModal(route) {
       state.tickSpeed = sp.ms;
       for (const x of speedWrap.children) x.classList.remove("primary");
       b.classList.add("primary");
+      const speedBtn = document.getElementById("speed-toggle");
+      if (speedBtn) speedBtn.textContent = sp.label;
     });
     speedWrap.appendChild(b);
   }
