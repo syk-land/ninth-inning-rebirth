@@ -826,6 +826,83 @@ html, body, button, a, input, select, .action-card {
   100% { box-shadow: 0 3px 0 #4a3321, 0 0 0 0 rgba(255, 226, 89, 0); transform: scale(1); }
 }
 
+/* PC Landscape Side Panels (16:9 Portal Viewport) */
+.portal-shell {
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+}
+.portal-shell > #app {
+  margin: 0;
+  width: 100%;
+}
+.side-panel {
+  display: none;
+  width: 240px;
+  background: #fff9ea;
+  border: 3px solid #4a3321;
+  border-radius: 10px;
+  padding: 14px;
+  color: #2f1f14;
+  box-shadow: 0 5px 0 #4a3321, 0 12px 24px rgba(0, 0, 0, 0.35);
+  flex-direction: column;
+  gap: 10px;
+}
+.side-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 900;
+  color: #1d522b;
+  border-bottom: 2px dashed #d6c39c;
+  padding-bottom: 6px;
+}
+.side-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.side-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+.side-kbd {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 5px;
+  background: #ffe259;
+  border: 2px solid #4a3321;
+  color: #3b2412;
+  font-family: monospace;
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+.side-box {
+  background: #f5ebd1;
+  border: 2px solid #c9b283;
+  border-radius: 7px;
+  padding: 9px 10px;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: #4a3321;
+}
+@media (min-width: 980px) {
+  .side-panel {
+    display: flex;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;

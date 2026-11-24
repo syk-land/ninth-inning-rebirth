@@ -80,18 +80,43 @@
   </script>
 </head>
 <body>
-  <div id="app">
-    <header class="topbar">
-      <div class="topbar-info" id="topbar-info"></div>
-      <button id="speed-toggle" class="locale-toggle speed-toggle" type="button" hidden></button>
-      <button id="pause-toggle" class="locale-toggle" type="button"></button>
-      <button id="locale-toggle" class="locale-toggle" type="button"></button>
-    </header>
-    <main id="view-root"></main>
-    <footer class="bottombar">
-      <span id="footer-status"></span>
-      <span class="footer-title" id="footer-title"></span>
-    </footer>
+  <div class="portal-shell">
+    <aside class="side-panel" aria-label="Controls and Roadmap">
+      <h2 class="side-title">⚾ Clubhouse Controls</h2>
+      <ul class="side-list">
+        <li><span>Pause / Resume</span><kbd class="side-kbd">Space</kbd></li>
+        <li><span>Sim Speed (0.5x–4x)</span><kbd class="side-kbd">1 · 2 · 3 · 4</kbd></li>
+        <li><span>Close Modal</span><kbd class="side-kbd">Esc</kbd></li>
+      </ul>
+      <div class="side-box">
+        <strong>Career Path</strong><br />
+        High School → Pro Draft → Majors → International → <strong>Hall of Fame</strong>
+      </div>
+    </aside>
+    <div id="app">
+      <header class="topbar">
+        <div class="topbar-info" id="topbar-info"></div>
+        <button id="speed-toggle" class="locale-toggle speed-toggle" type="button" hidden></button>
+        <button id="pause-toggle" class="locale-toggle" type="button"></button>
+        <button id="locale-toggle" class="locale-toggle" type="button"></button>
+      </header>
+      <main id="view-root"></main>
+      <footer class="bottombar">
+        <span id="footer-status"></span>
+        <span class="footer-title" id="footer-title"></span>
+      </footer>
+    </div>
+    <aside class="side-panel" aria-label="Scout Tips">
+      <h2 class="side-title">🏆 Manager Tips</h2>
+      <ul class="side-list">
+        <li><span>Two-Way Star</span><kbd class="side-kbd">Pitch &amp; Bat</kbd></li>
+        <li><span>Hot Streak</span><kbd class="side-kbd">Golden Aura</kbd></li>
+        <li><span>Pro Scout Camp</span><kbd class="side-kbd">+2 All Stats</kbd></li>
+      </ul>
+      <div class="side-box">
+        Keep stamina high during heavy training weeks to avoid injuries—or use <strong>Instant Recovery</strong> to stay in the lineup!
+      </div>
+    </aside>
   </div>
   <!-- 광고는 전면(인터스티셜)으로 시작/3시즌마다/은퇴 시점에 노출 — src/systems/ads.js -->
   <script type="module" src="src/main.js?v=20261120b"></script>
