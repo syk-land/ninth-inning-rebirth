@@ -13,7 +13,7 @@ import { getPlayerTeam, standings } from "../systems/league.js";
 import { createFaceSVG } from "../render/avatars.js";
 import { AUTO_PRESETS, autoFillWeek, topWeightStat, isTrainDirectionMaxed } from "../systems/autoTrain.js";
 import { teamAvgOvr } from "../systems/npc.js";
-import { showInterstitialAd } from "../systems/ads.js";
+import { showInterstitialAd, showRewardedAd } from "../systems/ads.js";
 import { CATEGORY_KEYS, applyCategoryAndPickEvent, applyEventChoice, getAvailableCategories, isTournamentEvent } from "../systems/offseason.js";
 import { appearanceChance, batterOVR, pitcherOVR, decideRolesForGame } from "../systems/simulator.js";
 import { createRadarSVG } from "../render/radar.js";
@@ -1450,6 +1450,59 @@ function renderTrainingDirectionBody(route) {
       weeks: state.player.injury.weeksLeft,
     });
     wrap.appendChild(n);
+
+    const healBtn = document.createElement("button");
+    healBtn.type = "button";
+    healBtn.className = "gold";
+    healBtn.style.cssText = "width:100%; margin-top:8px; padding:10px; font-size:13px; font-weight:700;";
+    healBtn.textContent = t("weekly.adInstantHealBtn");
+    healBtn.addEventListener("click", async () => {
+      healBtn.disabled = true;
+      healBtn.textContent = t("weekly.adLoading");
+      const ok = await showRewardedAd();
+      if (ok && state.player) {
+        state.player.injury = null;
+        state.player.stamina = Math.max(state.player.stamina ?? 0, 85);
+        sfx("milestone");
+        pushToast(t("weekly.adInstantHealDone"), "good");
+        saveGame();
+        route("weekly");
+      } else {
+        healBtn.disabled = false;
+        healBtn.textContent = t("weekly.adInstantHealBtn");
+      }
+    });
+    wrap.appendChild(healBtn);
+  }
+  if (state.season && !state.season.finished && !state.season.adCampUsed && state.player && !state.player.injury) {
+    const campBtn = document.createElement("button");
+    campBtn.type = "button";
+    campBtn.className = "gold";
+    campBtn.style.cssText = "width:100%; margin-top:10px; padding:10px; font-size:13px; font-weight:700;";
+    campBtn.textContent = t("weekly.adProCampBtn");
+    campBtn.addEventListener("click", async () => {
+      campBtn.disabled = true;
+      campBtn.textContent = t("weekly.adLoading");
+      const ok = await showRewardedAd();
+      if (ok && state.player && state.season) {
+        state.season.adCampUsed = true;
+        const cap = getPlayerStatCap(state.player);
+        for (const k of [...BATTER_STATS, ...PITCHER_STATS]) {
+          if (typeof state.player.stats?.[k] === "number") {
+            state.player.stats[k] = Math.min(cap, state.player.stats[k] + 2);
+          }
+        }
+        state.player.stamina = Math.min(100, (state.player.stamina ?? 60) + 20);
+        sfx("milestone");
+        pushToast(t("weekly.adProCampDone"), "good");
+        saveGame();
+        route("weekly");
+      } else {
+        campBtn.disabled = false;
+        campBtn.textContent = t("weekly.adProCampBtn");
+      }
+    });
+    wrap.appendChild(campBtn);
   }
   return wrap;
 }

@@ -1057,6 +1057,11 @@ export const ko = {
     intlTournamentAutoDone: "{tournament} 보상 적용",
     staminaVal: "{cur} / {max}",
     injuryVal: "{type} ({weeks}주)",
+    adLoading: "광고 불러오는 중...",
+    adInstantHealBtn: "🎬 부상 즉시 완치 (광고 시청)",
+    adInstantHealDone: "✨ 부상에서 즉시 완치되었습니다! 체력 회복!",
+    adProCampBtn: "🎬 특급 스카우트 캠프: 전 능력치 +2 (광고 · 시즌 1회)",
+    adProCampDone: "🔥 특급 캠프 완료! 모든 능력치 +2 & 체력 +20!",
     weekVal: "{cur} / {max}",
 
     batterHeader: "타자 <span style=\"color:var(--accent); font-size:12px\">출장률 {pct}%</span>",

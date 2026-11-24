@@ -1051,6 +1051,11 @@ export const en = {
     intlTournamentAutoDone: "{tournament} reward applied",
     staminaVal: "{cur} / {max}",
     injuryVal: "{type} ({weeks}w)",
+    adLoading: "Loading Ad...",
+    adInstantHealBtn: "🎬 Instant Injury Recovery (Watch Ad)",
+    adInstantHealDone: "✨ Fully recovered from injury! Stamina restored.",
+    adProCampBtn: "🎬 Pro Scout Camp: +2 All Stats (Watch Ad · 1/Season)",
+    adProCampDone: "🔥 Pro Scout Camp complete! All stats +2 & Stamina +20!",
     weekVal: "{cur} / {max}",
 
     batterHeader: "Batter <span style=\"color:var(--accent); font-size:12px\">Start rate {pct}%</span>",
