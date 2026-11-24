@@ -45,16 +45,6 @@
         else if (a && a.name === "SDK_GAME_START") { try { window.__adResume && window.__adResume(); } catch (e) {} }
       },
     };
-    window.addEventListener("click", function () {
-      if (window.__gmPrerollDone) return;
-      if (window.sdk && typeof window.sdk.showBanner === "function") {
-        window.__gmPrerollDone = true;
-        try { window.sdk.showBanner(); } catch (e) {}
-      } else if (typeof window.ShowAds === "function") {
-        window.__gmPrerollDone = true;
-        try { window.ShowAds(); } catch (e) {}
-      }
-    }, { capture: true, passive: true });
     (function (a, b, c) {
       var host = (window.location && window.location.hostname) || "";
       if (/yandex/i.test(host)) {
@@ -71,6 +61,7 @@
         a.head.appendChild(ys);
         return;
       }
+      if (!/gamemonetize/i.test(host)) return;
       var d = a.getElementsByTagName(b)[0];
       if (a.getElementById(c)) return;
       var s = a.createElement(b); s.id = c;
