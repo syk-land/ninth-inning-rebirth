@@ -17,9 +17,24 @@ export function maybeShowSeasonAd(seasonCount) {
   if (seasonCount > 0 && seasonCount % SEASON_AD_INTERVAL === 0) showInterstitialAd();
 }
 
-// 전면(인터스티셜) 광고 — Yandex Games SDK / GameMonetize SDK 멀티 지원.
+// 전면(인터스티셜) 광고 — CrazyGames SDK v3 / Yandex Games SDK / GameMonetize SDK 멀티 지원.
 export function showInterstitialAd() {
   try {
+    if (window.__cgSdkReady && window.CrazyGames?.SDK?.ad?.requestAd) {
+      try { window.CrazyGames.SDK.game.gameplayStop(); } catch (_) {}
+      window.CrazyGames.SDK.ad.requestAd("midgame", {
+        adStarted: () => { try { window.__adPause && window.__adPause(); } catch (_) {} },
+        adFinished: () => {
+          try { window.__adResume && window.__adResume(); } catch (_) {}
+          try { window.CrazyGames.SDK.game.gameplayStart(); } catch (_) {}
+        },
+        adError: () => {
+          try { window.__adResume && window.__adResume(); } catch (_) {}
+          try { window.CrazyGames.SDK.game.gameplayStart(); } catch (_) {}
+        },
+      });
+      return;
+    }
     if (window.__ysdk?.adv?.showFullscreenAdv) {
       window.__ysdk.adv.showFullscreenAdv({
         callbacks: {
@@ -38,8 +53,30 @@ export function showInterstitialAd() {
   } catch (_) { /* SDK 미준비/미설정 — 무시 */ }
 }
 
-// 보상형 광고 — Yandex Games SDK / GameMonetize SDK 멀티 지원.
+// 보상형 광고 — CrazyGames SDK v3 / Yandex Games SDK / GameMonetize SDK 멀티 지원.
 export function showRewardedAd() {
+  if (window.__cgSdkReady && window.CrazyGames?.SDK?.ad?.requestAd) {
+    return new Promise((resolve) => {
+      try { window.CrazyGames.SDK.game.gameplayStop(); } catch (_) {}
+      try {
+        window.CrazyGames.SDK.ad.requestAd("rewarded", {
+          adStarted: () => { try { window.__adPause && window.__adPause(); } catch (_) {} },
+          adFinished: () => {
+            try { window.__adResume && window.__adResume(); } catch (_) {}
+            try { window.CrazyGames.SDK.game.gameplayStart(); } catch (_) {}
+            resolve(true);
+          },
+          adError: () => {
+            try { window.__adResume && window.__adResume(); } catch (_) {}
+            try { window.CrazyGames.SDK.game.gameplayStart(); } catch (_) {}
+            resolve(true);
+          },
+        });
+      } catch (_) {
+        resolve(true);
+      }
+    });
+  }
   if (window.__ysdk?.adv?.showRewardedVideo) {
     return new Promise((resolve) => {
       let rewarded = false;

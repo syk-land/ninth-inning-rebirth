@@ -4,6 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="theme-color" content="#1d522b" />
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="./icons/icon-192.png" />
   <!-- 제목은 src/main.js 에서 현재 locale 기준으로 갱신 (기본 영어) -->
   <title>9th Inning Career Sim</title>
   <meta name="description" content="Live a baseball player's entire career — from high-school rookie to retirement. Set your training, manage condition and injuries, and watch every season simulate in this baseball life-sim." />
@@ -61,7 +63,28 @@
         a.head.appendChild(ys);
         return;
       }
-      if (!/gamemonetize/i.test(host)) return;
+      if (/crazygames|1001juegos/i.test(host)) {
+        var cg = a.createElement(b); cg.id = "crazygames-sdk";
+        cg.src = "https://sdk.crazygames.com/crazygames-sdk-v3.js";
+        cg.onload = function () {
+          if (window.CrazyGames && window.CrazyGames.SDK && typeof window.CrazyGames.SDK.init === "function") {
+            window.CrazyGames.SDK.init().then(function () {
+              window.__cgSdkReady = true;
+              try { window.CrazyGames.SDK.game.gameplayStart(); } catch (e) {}
+            }).catch(function () {});
+          }
+        };
+        a.head.appendChild(cg);
+        return;
+      }
+      if (!/gamemonetize/i.test(host)) {
+        if ("serviceWorker" in navigator && window.self === window.top) {
+          window.addEventListener("load", function () {
+            navigator.serviceWorker.register("./sw.js").catch(function () {});
+          });
+        }
+        return;
+      }
       var d = a.getElementsByTagName(b)[0];
       if (a.getElementById(c)) return;
       var s = a.createElement(b); s.id = c;
